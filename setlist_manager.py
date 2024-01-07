@@ -4,7 +4,8 @@ from datetime import datetime
 class SetlistManager:
     def __init__(self):
         self.setlists = []
-        self.calendar_entries = []
+        self.calendar = {}
+        self.deleted_entries = []
         self.current_setlist = None
 
     def create_setlist(self, name):
@@ -49,16 +50,6 @@ class SetlistManager:
             if setlist['name'] == setlist_name:
                 return setlist['entries']
 
-    def add_setlist_to_calendar(self, setlist_name, date):
-        for setlist in self.setlists:
-            if setlist['name'] == setlist_name:
-                setlist_entry = {
-                    'description': setlist_name,
-                    'date': date.strftime('%Y-%m-%d'),
-                    'setlist_index': self.setlists.index(setlist)
-                }
-                self.calendar_entries.append(setlist_entry)
-
     def rearrange_setlist_entries(self, setlist_name, old_index, new_index):
         for setlist in self.setlists:
             if setlist['name'] == setlist_name and 0 <= old_index < len(setlist['entries']) and 0 <= new_index < len(setlist['entries']):
@@ -74,6 +65,40 @@ class SetlistManager:
             for i, entry in enumerate(setlist['entries']):
                 entry['index'] = i
 
-    def show_calendar_entries(self):
-        for entry in self.calendar_entries:
-            print(f"Date: {entry['date']}, Setlist: {entry['description']}")
+        def show_calendar_entries(self):
+            for entry in self.calendar_entries:
+                print(f"Date: {entry['date']}, Setlist: {entry['description']}")
+
+        def add_to_calendar(self, setlist_name, date):
+            # Convert the date to a string for storage
+            formatted_date = date.strftime('%Y-%m-%d')
+            self.calendar[formatted_date] = setlist_name
+
+    def get_setlist_for_date(self, date):
+        # Convert the date to a string for retrieval
+        formatted_date = date.strftime('%Y-%m-%d')
+        return self.calendar.get(formatted_date, None)
+    
+    def delete_setlist(self, setlist_name):
+        for setlist in self.setlists:
+            if setlist['name'] == setlist_name:
+                self.setlists.remove(setlist)
+                break
+
+    def save_data(self):
+        # Save setlists and deleted entries to a file (e.g., using JSON)
+        data = {'setlists': self.setlists, 'deleted_entries': self.deleted_entries}
+        with open('setlist_data.json', 'w') as file:
+            json.dump(data, file)
+
+
+    def load_data(self):
+        # Load setlists and deleted entries from a file (e.g., using JSON)
+        try:
+            with open('setlist_data.json', 'r') as file:
+                data = json.load(file)
+                if isinstance(data, dict):
+                    self.setlists = data.get('setlists', [])
+                    self.deleted_entries = data.get('deleted_entries', [])
+        except FileNotFoundError:
+            pass  # Ignore if the file is not found
